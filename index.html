@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 한국사 모의고사</title>
+    <style>
+        /* 화면을 예쁘게 꾸며주는 CSS 디자인 */
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #333; }
+        .upload-box { background: #fff; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .quiz-box { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .question-title { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; color: #222; }
+        .question-text { margin-bottom: 20px; background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-left: 5px solid #4CAF50; border-radius: 5px; line-height: 1.6; }
+        .options { list-style: none; padding: 0; margin-bottom: 20px; }
+        .options li { margin-bottom: 12px; font-size: 1.1em; cursor: pointer; }
+        .options label { cursor: pointer; display: flex; align-items: center; }
+        .options input { margin-right: 10px; width: 18px; height: 18px; }
+        .explanation { display: none; margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 5px; color: #025aa5; line-height: 1.5; }
+        img { max-width: 100%; height: auto; display: block; margin-bottom: 15px; border-radius: 5px; }
+        button { background: #4CAF50; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 1.1em; font-weight: bold; }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+    <h1>📝 나만의 모의고사</h1>
+    
+    <div class="upload-box">
+        <p>파이썬으로 만든 <b>JSON 파일</b>을 선택해 주세요!</p>
+        <input type="file" id="file-input" accept=".json">
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <script>
+        // 파일을 선택하면 읽어와서 화면에 그려주는 자바스크립트
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const contents = e.target.result;
+                const data = JSON.parse(contents); // JSON 데이터를 컴퓨터가 읽기 좋게 변환
+                renderQuiz(data);
+            };
+            reader.readAsText(file);
+        });
+
+        // 퀴즈 화면을 만들어주는 함수
+        function renderQuiz(data) {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = ''; // 기존 내용 지우기
+
+            data.forEach((item) => {
+                const quizBox = document.createElement('div');
+                quizBox.className = 'quiz-box';
+
+                // 1. 문제 제목
+                let html = `<div class="question-title">${item.번호}. ${item.문제}</div>`;
+
+                // 2. 이미지 (있을 경우만 표시)
+                if (item.이미지_경로) {
+                    html += `<img src="${item.이미지_경로}" alt="문제 이미지">`;
+                }
+
+                // 3. 지문 (있을 경우만 표시)
+                if (item.지문) {
+                    // \n(줄바꿈)을 HTML 줄바꿈 태그(<br>)로 바꿔서 출력
+                    html += `<div class="question-text">${item.지문.replace(/\n/g, '<br>')}</div>`;
+                }
+
+                // 4. 보기 (라디오 버튼)
+                html += `<ul class="options">`;
+                item.보기.forEach((opt, optIndex) => {
+                    if(opt) { // 보기가 빈칸이 아닐 때만 출력
+                        html += `<li>
+                            <label>
+                                <input type="radio" name="q${item.번호}" value="${optIndex + 1}">
+                                ①②③④⑤[optIndex] ${opt}
+                            </label>
+                        </li>`.replace('①②③④⑤[optIndex]', ['①','②','③','④','⑤'][optIndex]);
+                    }
+                });
+                html += `</ul>`;
+
+                // 5. 정답 확인 버튼 및 해설 영역 (처음엔 숨겨둠)
+                html += `
+                    <button onclick="checkAnswer(${item.번호}, ${item.정답}, this)">정답 확인</button>
+                    <div class="explanation" id="exp-${item.번호}">
+                        <strong>💡 정답: ${item.정답}번</strong><br><br>
+                        ${item.해설 || '해설이 없습니다.'}
+                    </div>
+                `;
+
+                quizBox.innerHTML = html;
+                container.appendChild(quizBox);
+            });
+        }
+
+        // 정답을 채점하는 함수
+        function checkAnswer(qNum, correctAns, btnElement) {
+            const selected = document.querySelector(`input[name="q${qNum}"]:checked`);
+            const expDiv = document.getElementById(`exp-${qNum}`);
+
+            if (!selected) {
+                alert("정답을 선택해 주세요!");
+                return;
+            }
+
+            if (parseInt(selected.value) === correctAns) {
+                alert("⭕ 정답입니다!");
+            } else {
+                alert("❌ 틀렸습니다.");
+            }
+
+            // 채점 후 버튼은 숨기고 해설을 보여줌
+            expDiv.style.display = 'block';
+            btnElement.style.display = 'none'; 
+        }
+    </script>
+</body>
+</html>
